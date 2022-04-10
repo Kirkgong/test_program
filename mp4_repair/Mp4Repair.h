@@ -1,3 +1,6 @@
+#ifndef MP4_REPAIR_H
+#define MP4_REPAIR_H
+
 #include "stdint.h"
 #include <fstream>
 #include <iostream>
@@ -34,3 +37,5 @@ private:
     bool boxNeedIterate(const char* box_name);
     bool stringCompare(const char* str1, const char* str2, int len);
 };
+
+#endif
