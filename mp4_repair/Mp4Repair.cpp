@@ -6,6 +6,7 @@ using namespace std;
 #define ITERRATE_BOX_NUM       7
 #define BOX_HEAD_LEN           8
 #define BOX_NAME_LEN           4
+#define SAMPLE_HEAD_LEN        4
 
 
 const char* iterate_boxs_name[ITERRATE_BOX_NUM] = {
@@ -32,44 +33,46 @@ void Mp4Repair::close(void){
     in_fs.close();
 }
 
-FILE_STATUS Mp4Repair::check(void){
+FILE_STATUS Mp4Repair::check(char* file){
+    open(file);
     in_fs.seekg(0, ios::end);
     in_file_len = in_fs.tellg();
-    cout << "filelen = " << in_file_len<<endl;
     in_fs.seekg(0, ios::beg);
-    boxParse();
+    FILE_STATUS status = FILE_STATUR_DAMAGE; 
+    boxParse(&status);
+    close();
+    return status;
 }
 
-
-bool Mp4Repair::boxParse(void){
+bool Mp4Repair::boxParse(FILE_STATUS* status){
     if(in_file_len - in_fs.tellg() < BOX_HEAD_LEN){
         return false;
     }
     in_fs.read((char*)buf, BOX_HEAD_LEN);
-    // for(int i=0; i<BOX_HEAD_LEN; i++){
-    //     printf("0x%02x ", buf[i]);
-    // }
-    // printf("\n");
 
     uint32_t box_len = (buf[0]<<24) + (buf[1] << 16) + (buf[2] << 8) + (buf[3] << 0);
-    cout << "box_type " << buf[4] << buf[5] << buf[6] << buf[7] << endl;
-    cout << "box_len = " << box_len << endl;
+    // cout << "box_type " << buf[4] << buf[5] << buf[6] << buf[7] << endl;
+    // cout << "box_len = " << box_len << endl;
+    if(stringCompare((char*)&buf[BOX_NAME_LEN], "mdat", BOX_NAME_LEN)){
+        *status = FILE_STATUR_ABNORMAL;
+        mdat_index = in_fs.tellg();
+    }else if(stringCompare((char*)&buf[BOX_NAME_LEN], "moov", BOX_NAME_LEN)){
+        *status = FILE_STATUR_NORMAL;
+    }
 
     if(in_file_len - in_fs.tellg() < box_len - BOX_HEAD_LEN){
         return false;
     }
 
-    if(boxNeedIterate((char*)&buf[BOX_NAME_LEN])){
-        if(!boxParse()){
-            return false;
-        }
-    }else{
-        if(in_fs.tellg() != in_file_len){
-            in_fs.seekg(box_len - BOX_HEAD_LEN, ios::cur);
-            boxParse();
-        }
+    if(!boxNeedIterate((char*)&buf[BOX_NAME_LEN])){
+        in_fs.seekg(box_len - BOX_HEAD_LEN, ios::cur);
     }
-    return true;
+
+    if(in_fs.tellg() != in_file_len){
+        return boxParse(status);
+    }else{
+        return true;
+    }
 }
 
 bool Mp4Repair::boxNeedIterate(const char* box_name){
@@ -88,4 +91,28 @@ bool Mp4Repair::stringCompare(const char* str1, const char* str2, int len){
         }
     }
     return true;
+}
+
+FILE_STATUS Mp4Repair::repair(char* file){
+    open(file);
+    in_fs.seekg(0, ios::end);
+    in_file_len = in_fs.tellg();
+    in_fs.seekg(0, ios::beg);
+    in_fs.seekg(mdat_index, ios::beg);
+
+    while(in_fs.tellg() != in_file_len){
+        in_fs.read((char*)buf, SAMPLE_HEAD_LEN);
+        for(int i=0; i<SAMPLE_HEAD_LEN; i++){
+            printf("0x%02x ", buf[i]);
+        }
+        printf("\n");
+        if(buf[0] == 0xFF){
+            // audio sample
+            in_fs.seekg(576 - SAMPLE_HEAD_LEN, ios::cur);
+        }else{
+            // video sample
+            uint32_t smaple_len = (buf[0]<<24) + (buf[1] << 16) + (buf[2] << 8) + (buf[3] << 0);
+            in_fs.seekg(smaple_len, ios::cur);
+        }
+    }
 }
