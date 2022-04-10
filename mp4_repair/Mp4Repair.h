@@ -18,17 +18,19 @@ private:
     std::ofstream out_fs; 
     uint8_t buf[BUF_SIZE];
     int in_file_len;
+    int mdat_index;
 
 public:
     Mp4Repair();
     ~Mp4Repair();
 
     bool open(char* file);
-    FILE_STATUS check(void);
+    FILE_STATUS check(char* file);
     void close();
+    FILE_STATUS repair(char* file);
 
 private:
-    bool boxParse(void);
+    bool boxParse(FILE_STATUS* status);
     bool boxNeedIterate(const char* box_name);
     bool stringCompare(const char* str1, const char* str2, int len);
 };
