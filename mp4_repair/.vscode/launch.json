@@ -8,7 +8,7 @@
             "name": "(gdb) Launch",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/mp4_test",
+            "program": "${workspaceFolder}/build/mp4_repair",
             "stopAtEntry": false,
             "cwd": "${fileDirname}",
             "environment": [],

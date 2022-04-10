@@ -1,10 +1,15 @@
 #include "Mp4Repair.h"
 #include <iostream>
 #include <unistd.h>
+#include "FileMux.h"
 
 using namespace std;
 
 int main(int argc, char** argv){
+
+    FileMux file_mux;
+    file_mux.init();
+    exit(0);
 
     if(argc < 2){
         cout << "Please input file name." << endl; 
