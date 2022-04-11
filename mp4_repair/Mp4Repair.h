@@ -5,8 +5,8 @@
 #include <fstream>
 #include <iostream>
 
-#define BUF_SIZE 1024
-
+// #define BUF_SIZE 3840*1696*3
+#define BUF_SIZE 1000000
 
 typedef enum{
     FILE_STATUR_NORMAL,
@@ -18,10 +18,10 @@ typedef enum{
 class Mp4Repair{
 private:
     std::ifstream in_fs; 
-    std::ofstream out_fs; 
     uint8_t buf[BUF_SIZE];
     int in_file_len;
     int mdat_index;
+    int mdat_len;
 
 public:
     Mp4Repair();

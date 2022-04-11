@@ -9,6 +9,7 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/mp4_repair",
+            "args": ["${workspaceFolder}/build/test.mp4"],
             "stopAtEntry": false,
             "cwd": "${fileDirname}",
             "environment": [],

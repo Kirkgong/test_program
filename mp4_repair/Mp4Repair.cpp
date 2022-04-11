@@ -1,5 +1,6 @@
 #include "Mp4Repair.h"
 #include <iostream>
+#include "FileMux.h"
 
 using namespace std;
 
@@ -7,6 +8,8 @@ using namespace std;
 #define BOX_HEAD_LEN           8
 #define BOX_NAME_LEN           4
 #define SAMPLE_HEAD_LEN        4
+#define NALU_HEAD_LEN          4
+#define NALU_TYPE_LEN          2
 
 
 const char* iterate_boxs_name[ITERRATE_BOX_NUM] = {
@@ -56,6 +59,7 @@ bool Mp4Repair::boxParse(FILE_STATUS* status){
     if(stringCompare((char*)&buf[BOX_NAME_LEN], "mdat", BOX_NAME_LEN)){
         *status = FILE_STATUR_ABNORMAL;
         mdat_index = in_fs.tellg();
+        mdat_len = box_len - BOX_HEAD_LEN;
     }else if(stringCompare((char*)&buf[BOX_NAME_LEN], "moov", BOX_NAME_LEN)){
         *status = FILE_STATUR_NORMAL;
     }
@@ -100,19 +104,45 @@ FILE_STATUS Mp4Repair::repair(char* file){
     in_fs.seekg(0, ios::beg);
     in_fs.seekg(mdat_index, ios::beg);
 
-    while(in_fs.tellg() != in_file_len){
-        in_fs.read((char*)buf, SAMPLE_HEAD_LEN);
-        for(int i=0; i<SAMPLE_HEAD_LEN; i++){
-            printf("0x%02x ", buf[i]);
-        }
-        printf("\n");
-        if(buf[0] == 0xFF){
-            // audio sample
-            in_fs.seekg(576 - SAMPLE_HEAD_LEN, ios::cur);
-        }else{
-            // video sample
-            uint32_t smaple_len = (buf[0]<<24) + (buf[1] << 16) + (buf[2] << 8) + (buf[3] << 0);
-            in_fs.seekg(smaple_len, ios::cur);
-        }
+    FileMux file_mux;
+    file_mux.init();
+
+    while(in_fs.tellg() != mdat_index + mdat_len){
+            in_fs.read((char*)buf, SAMPLE_HEAD_LEN);
+            for(int i=0; i<SAMPLE_HEAD_LEN; i++){
+                printf("0x%02x ", buf[i]);
+            }
+            printf("\n");
+
+            if(buf[0] == 0xFF){
+                // audio sample
+                in_fs.seekg(576 - SAMPLE_HEAD_LEN, ios::cur);
+            }else{
+                // video sample
+                uint32_t smaple_len = (buf[0]<<24) + (buf[1] << 16) + (buf[2] << 8) + (buf[3] << 0);
+                in_fs.read((char*)&buf[NALU_HEAD_LEN], smaple_len);
+
+                if(buf[4] == 0x40 && buf[5] == 0x01){
+                    printf("vps\n");
+                    continue;
+                }else if(buf[4] == 0x42 && buf[5] == 0x01){
+                    printf("sps\n");
+                    continue;
+                }else if(buf[4] == 0x44 && buf[5] == 0x01){
+                    printf("pps\n");
+                    continue;
+                }else if(buf[4] == 0x4E && buf[5] == 0x01){
+                    printf("sei\n");
+                    continue;
+                }else if(buf[4] == 0x26 && buf[5] == 0x01){
+                    printf("idr\n");
+                }else if(buf[4] == 0x02 && buf[5] == 0x01){
+                    printf("slice\n");
+                }else{
+                    printf("undefine\n");
+                    continue;
+                }
+            }
     }
+    file_mux.close();
 }
