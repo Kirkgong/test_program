@@ -54,8 +54,6 @@ bool Mp4Repair::boxParse(FILE_STATUS* status){
     in_fs.read((char*)buf, BOX_HEAD_LEN);
 
     uint32_t box_len = (buf[0]<<24) + (buf[1] << 16) + (buf[2] << 8) + (buf[3] << 0);
-    // cout << "box_type " << buf[4] << buf[5] << buf[6] << buf[7] << endl;
-    // cout << "box_len = " << box_len << endl;
     if(stringCompare((char*)&buf[BOX_NAME_LEN], "mdat", BOX_NAME_LEN)){
         *status = FILE_STATUR_ABNORMAL;
         mdat_index = in_fs.tellg();
@@ -107,42 +105,63 @@ FILE_STATUS Mp4Repair::repair(char* file){
     FileMux file_mux;
     file_mux.init();
 
+
     while(in_fs.tellg() != mdat_index + mdat_len){
-            in_fs.read((char*)buf, SAMPLE_HEAD_LEN);
-            for(int i=0; i<SAMPLE_HEAD_LEN; i++){
-                printf("0x%02x ", buf[i]);
-            }
-            printf("\n");
+        in_fs.read((char*)&buf[buf_index], SAMPLE_HEAD_LEN);
 
-            if(buf[0] == 0xFF){
-                // audio sample
-                in_fs.seekg(576 - SAMPLE_HEAD_LEN, ios::cur);
-            }else{
-                // video sample
-                uint32_t smaple_len = (buf[0]<<24) + (buf[1] << 16) + (buf[2] << 8) + (buf[3] << 0);
-                in_fs.read((char*)&buf[NALU_HEAD_LEN], smaple_len);
+        if(buf[buf_index] == 0xFF){
+            // audio sample
+            in_fs.seekg(576 - SAMPLE_HEAD_LEN, ios::cur);
+        }else{
+            // video sample
+            uint32_t smaple_len = (buf[buf_index + 0]<<24) + 
+                                  (buf[buf_index + 1] << 16) + 
+                                  (buf[buf_index + 2] << 8) + 
+                                  (buf[buf_index + 3] << 0);
 
-                if(buf[4] == 0x40 && buf[5] == 0x01){
-                    printf("vps\n");
-                    continue;
-                }else if(buf[4] == 0x42 && buf[5] == 0x01){
-                    printf("sps\n");
-                    continue;
-                }else if(buf[4] == 0x44 && buf[5] == 0x01){
-                    printf("pps\n");
-                    continue;
-                }else if(buf[4] == 0x4E && buf[5] == 0x01){
-                    printf("sei\n");
-                    continue;
-                }else if(buf[4] == 0x26 && buf[5] == 0x01){
-                    printf("idr\n");
-                }else if(buf[4] == 0x02 && buf[5] == 0x01){
-                    printf("slice\n");
-                }else{
-                    printf("undefine\n");
-                    continue;
+            buf[buf_index + 0] = 0x00;
+            buf[buf_index + 1] = 0x00;
+            buf[buf_index + 2] = 0x00;
+            buf[buf_index + 3] = 0x01;
+            buf_index += NALU_HEAD_LEN;
+
+            in_fs.read((char*)&buf[buf_index], smaple_len);
+            buf_index += smaple_len;
+
+            // for(int i=0; i<10; i++){
+            //     printf("0x%02x ", buf[buf_index - smaple_len + i]);
+            // }
+            // printf("\n");
+
+            if(buf[buf_index - smaple_len] == 0x40 && buf[buf_index - smaple_len + 1] == 0x01){
+                // vps
+            }else if(buf[buf_index - smaple_len] == 0x42 && buf[buf_index - smaple_len + 1] == 0x01){
+                // sps
+            }else if(buf[buf_index - smaple_len] == 0x44 && buf[buf_index - smaple_len + 1] == 0x01){
+                // pps
+                printf("buf_index = %d\n", buf_index);
+                file_mux.writeFrame(buf, buf_index, true);
+                buf_index = 0;
+            }else if(buf[buf_index - smaple_len] == 0x4E && buf[buf_index - smaple_len + 1] == 0x01){
+                // sei
+            }else if(buf[buf_index - smaple_len] == 0x26 && buf[buf_index - smaple_len + 1] == 0x01){
+                // idr
+                if(!(buf[buf_index - smaple_len + 2]  & 0x80)){
+                    printf("writeFrame len = %d\n", buf_index);
+                    file_mux.writeFrame(buf, buf_index, true);
+                    buf_index = 0;
                 }
+            }else if(buf[buf_index - smaple_len] == 0x02 && buf[buf_index - smaple_len + 1] == 0x01){
+                // slice
+                if(!(buf[buf_index - smaple_len + 2]  & 0x80)){
+                    printf("writeFrame len = %d\n", buf_index);
+                    file_mux.writeFrame(buf, buf_index, false);
+                    buf_index = 0;
+                }
+            }else{
+                printf("undefine\n");
             }
+        }
     }
     file_mux.close();
 }

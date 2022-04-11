@@ -19,6 +19,8 @@ class Mp4Repair{
 private:
     std::ifstream in_fs; 
     uint8_t buf[BUF_SIZE];
+    uint32_t buf_index;
+
     int in_file_len;
     int mdat_index;
     int mdat_len;
