@@ -27,7 +27,7 @@ public:
     FileMux();
     ~FileMux();
     int init(void);
-    int writeFrame(uint8_t* buf, uint32_t len);
+    int writeFrame(uint8_t* buf, uint32_t len, bool key_frame);
     void close(void);
 };
 
