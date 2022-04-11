@@ -5,9 +5,11 @@ include_directories(/home/nio/project/ffmpeg)
 set(APP_SRC main.cpp Mp4Repair.cpp FileMux.cpp)
 link_directories(/home/nio/project/ffmpeg/libavformat) 
 link_directories(/home/nio/project/ffmpeg/libavcodec) 
+link_directories(/home/nio/project/ffmpeg/libavutil) 
 add_executable(${PROJECT_NAME} main.cpp  Mp4Repair.cpp FileMux.cpp)
 target_link_libraries(${PROJECT_NAME} -lavformat ) 
 target_link_libraries(${PROJECT_NAME} -lavcodec ) 
+target_link_libraries(${PROJECT_NAME} -lavutil ) 
 
 add_definitions(-DDEBUG=1)
 #print message
