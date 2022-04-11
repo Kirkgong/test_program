@@ -1,16 +1,11 @@
 #include "Mp4Repair.h"
 #include <iostream>
 #include <unistd.h>
-#include "FileMux.h"
 
 using namespace std;
 
+Mp4Repair repair;
 int main(int argc, char** argv){
-
-    FileMux file_mux;
-    file_mux.init();
-    exit(0);
-
     if(argc < 2){
         cout << "Please input file name." << endl; 
         exit(0);
@@ -20,8 +15,6 @@ int main(int argc, char** argv){
         cout << "File " << argv[1] << " is not exist." << endl;
         exit(0);
     }
-
-    Mp4Repair repair;
 
     FILE_STATUS status = repair.check(argv[1]); 
 
@@ -34,5 +27,4 @@ int main(int argc, char** argv){
     }else if(status == FILE_STATUR_ABNORMAL){
         repair.repair(argv[1]);
     }
-
 }
