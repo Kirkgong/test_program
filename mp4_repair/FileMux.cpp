@@ -20,7 +20,7 @@ static  unsigned char Extradata_svc_luke[SVC_PPS_SPS_LUKE] ={0x0,0x0,0x0,0x1,0x4
 
 
  FileMux::FileMux(){
-
+    extra_data_buf = (uint8_t*)malloc(EXTRA_DATA_MAX_LEN);
  }
 
 FileMux::~FileMux(){
@@ -52,12 +52,12 @@ int FileMux::init(void){
     /* copy the stream parameters to the muxer */
     AVCodecParameters *in_videocodecpar = avcodec_parameters_alloc();
 
-    uint8_t* extradata_dvr =(uint8_t*) av_mallocz(DVR_PPS_SPS_LUKE + AV_INPUT_BUFFER_PADDING_SIZE);
-    memcpy(extradata_dvr, Extradata_dvr_luke, DVR_PPS_SPS_LUKE);
+    uint8_t* extradata_dvr =(uint8_t*) av_mallocz(extra_data_len + AV_INPUT_BUFFER_PADDING_SIZE);
+    memcpy(extradata_dvr, extra_data_buf, extra_data_len);
 
     in_videocodecpar->codec_type = AVMEDIA_TYPE_VIDEO; // VIDEO
     in_videocodecpar->codec_id = AV_CODEC_ID_HEVC;
-    in_videocodecpar->extradata_size = DVR_PPS_SPS_LUKE;
+    in_videocodecpar->extradata_size = extra_data_len;
     in_videocodecpar->extradata = extradata_dvr;
     in_videocodecpar->format = AV_PIX_FMT_YUV420P;
     in_videocodecpar->profile = 0x2;
@@ -147,6 +147,15 @@ void FileMux::close(void){
 
     /* free the stream */
     avformat_free_context(oc);
+}
+
+void FileMux::writeExtraData(uint8_t* data, uint32_t len){
+    if(len + extra_data_len < EXTRA_DATA_MAX_LEN){
+        memcpy(&extra_data_buf[extra_data_len], data, len);
+        extra_data_len+=len;
+    }else{
+        printf("Extra data len bigger than max extra data len\n");
+    }
 }
 
 #endif
