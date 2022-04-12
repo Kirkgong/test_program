@@ -25,7 +25,7 @@ const char* iterate_boxs_name[ITERRATE_BOX_NUM] = {
 Mp4Repair::Mp4Repair(){
     buf = (uint8_t*)malloc(BUF_SIZE);
     file_mux = new(FileMux);
-    in_fs = new(std::ifstream);
+    buf_index = 0;
 }
 
 Mp4Repair::~Mp4Repair(){
@@ -34,39 +34,45 @@ Mp4Repair::~Mp4Repair(){
     }
     if(file_mux){
         delete file_mux;
+        file_mux = nullptr;
     }
 }
 
-
-bool Mp4Repair::open(char* file){
-    in_fs->open(file, ios::in | ios::binary);
+ifstream* Mp4Repair::open(char* file){
+    ifstream* fs = new(std::ifstream);    
+    fs->open(file, ios::in | ios::binary);
+    return fs;
 }
 
-void Mp4Repair::close(void){
-    in_fs->close();
+void Mp4Repair::close(ifstream* fs){
+    fs->close();
+    delete fs;
+    fs = nullptr;
 }
 
 FILE_STATUS Mp4Repair::check(char* file){
-    open(file);
-    in_fs->seekg(0, ios::end);
-    in_file_len = in_fs->tellg();
-    in_fs->seekg(0, ios::beg);
+    std::ifstream* fs; 
+    fs = open(file);
+    in_file_len = getFileLen(fs, 0);
+    // fs->seekg(0, ios::end);
+    // in_file_len = fs->tellg();
+    // fs->seekg(0, ios::beg);
     FILE_STATUS status = FILE_STATUR_DAMAGE; 
-    boxParse(&status);
-    close();
+    boxParse(fs, &status);
+    close(fs);
     return status;
 }
 
-bool Mp4Repair::boxParse(FILE_STATUS* status){
-    if(in_file_len - in_fs->tellg() < BOX_HEAD_LEN){
+bool Mp4Repair::boxParse(std::ifstream* fs, FILE_STATUS* status){
+    if(in_file_len - fs->tellg() < BOX_HEAD_LEN){
         return false;
     }
-    in_fs->read((char*)buf, BOX_HEAD_LEN);
+    fs->read((char*)buf, BOX_HEAD_LEN);
 
     uint32_t box_len = (buf[0]<<24) + (buf[1] << 16) + (buf[2] << 8) + (buf[3] << 0);
     if(stringCompare((char*)&buf[BOX_NAME_LEN], "mdat", BOX_NAME_LEN)){
         *status = FILE_STATUR_ABNORMAL;
-        mdat_index = in_fs->tellg();
+        mdat_index = fs->tellg();
         if(box_len == 0 || box_len == 1){
             mdat_len = in_file_len - mdat_index;
         }else{
@@ -76,16 +82,16 @@ bool Mp4Repair::boxParse(FILE_STATUS* status){
         *status = FILE_STATUR_NORMAL;
     }
 
-    if(in_file_len - in_fs->tellg() < box_len - BOX_HEAD_LEN){
+    if(in_file_len - fs->tellg() < box_len - BOX_HEAD_LEN){
         return false;
     }
 
     if(!boxNeedIterate((char*)&buf[BOX_NAME_LEN])){
-        in_fs->seekg(box_len - BOX_HEAD_LEN, ios::cur);
+        fs->seekg(box_len - BOX_HEAD_LEN, ios::cur);
     }
 
-    if(in_fs->tellg() != in_file_len){
-        return boxParse(status);
+    if(fs->tellg() != in_file_len){
+        return boxParse(fs, status);
     }else{
         return true;
     }
@@ -109,31 +115,34 @@ bool Mp4Repair::stringCompare(const char* str1, const char* str2, int len){
     return true;
 }
 
+uint32_t Mp4Repair::getFileLen(std::ifstream* fs, uint32_t seek){
+    uint32_t ret;
+    fs->seekg(0, ios::end);
+    ret = fs->tellg();
+    fs->seekg(seek, ios::beg);
+    return ret;
+}
+
 FILE_STATUS Mp4Repair::repair(char* file){
-    static NAUL_TYPE naul_type = NAUL_TYPE_NONE; 
+    std::ifstream* fs; 
+    NAUL_TYPE naul_type = NAUL_TYPE_NONE; 
 
     if(mdat_len == 0){
         printf("Please check file first.");
         return FILE_STATUR_NORMAL;
     }
-    open(file);
-    in_fs->seekg(0, ios::end);
-    in_file_len = in_fs->tellg();
-    in_fs->seekg(0, ios::beg);
-    in_fs->seekg(mdat_index, ios::beg);
 
-    while(in_fs->tellg() != mdat_index + mdat_len){
-        in_fs->read((char*)&buf[buf_index], SAMPLE_HEAD_LEN + NALU_TYPE_LEN);
-        // for(int i=0; i<SAMPLE_HEAD_LEN + NALU_TYPE_LEN; i++){
-            // printf("0x%02x ", buf[buf_index + i]);
-        // }
-        // printf("\n");
+    fs = open(file);
+    in_file_len = getFileLen(fs, mdat_index);
+
+    while(fs->tellg() != mdat_index + mdat_len){
+        fs->read((char*)&buf[buf_index], SAMPLE_HEAD_LEN + NALU_TYPE_LEN);
 
         if(buf[buf_index] == 0xFF){
             // audio sample
             write(buf, buf_index, naul_type);
             naul_type = NAUL_TYPE_NONE; 
-            in_fs->seekg(AUDIO_SAMPLE_LEN - (SAMPLE_HEAD_LEN + NALU_TYPE_LEN), ios::cur);
+            fs->seekg(AUDIO_SAMPLE_LEN - (SAMPLE_HEAD_LEN + NALU_TYPE_LEN), ios::cur);
         }else{
             uint32_t smaple_len = (buf[buf_index +  0]<<24) + 
                                   (buf[buf_index +  1] << 16) + 
@@ -154,7 +163,7 @@ FILE_STATUS Mp4Repair::repair(char* file){
                 naul_type = NAUL_TYPE_PPS;
             }
 
-            in_fs->seekg(-NALU_TYPE_LEN, ios::cur);
+            fs->seekg(-NALU_TYPE_LEN, ios::cur);
 
             buf[buf_index + 0] = 0x00;
             buf[buf_index + 1] = 0x00;
@@ -162,13 +171,13 @@ FILE_STATUS Mp4Repair::repair(char* file){
             buf[buf_index + 3] = 0x01;
             buf_index += SAMPLE_HEAD_LEN;
 
-            in_fs->read((char*)&buf[buf_index], smaple_len);
+            fs->read((char*)&buf[buf_index], smaple_len);
             buf_index += smaple_len;
         }
     }
+    close(fs);
     file_mux->close();
 }
-
 
 void Mp4Repair::write( uint8_t* data, uint32_t len, NAUL_TYPE type){
     if(type == NAUL_TYPE_PPS){
