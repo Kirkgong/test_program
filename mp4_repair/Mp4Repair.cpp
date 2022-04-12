@@ -114,10 +114,10 @@ FILE_STATUS Mp4Repair::repair(char* file){
 
     while(in_fs.tellg() != mdat_index + mdat_len){
         in_fs.read((char*)&buf[buf_index], SAMPLE_HEAD_LEN + NALU_TYPE_LEN);
-        for(int i=0; i<SAMPLE_HEAD_LEN + NALU_TYPE_LEN; i++){
-            printf("0x%02x ", buf[buf_index + i]);
-        }
-        printf("\n");
+        // for(int i=0; i<SAMPLE_HEAD_LEN + NALU_TYPE_LEN; i++){
+            // printf("0x%02x ", buf[buf_index + i]);
+        // }
+        // printf("\n");
 
         if(buf[buf_index] == 0xFF){
             // audio sample
@@ -167,28 +167,15 @@ FILE_STATUS Mp4Repair::repair(char* file){
 
 
 void Mp4Repair::write( uint8_t* data, uint32_t len, NAUL_TYPE type){
-    printf("write, type = %d\n", type);
     if(type == NAUL_TYPE_PPS){
         file_mux.writeExtraData(buf, buf_index);
-        for(int i=0; i<buf_index; i++){
-            printf("0x%02x ", buf[i]);
-        }
-        printf("\n");
         file_mux.init();
         file_mux.writeFrame(buf, buf_index, true);
         buf_index = 0;
     }else if(type == NAUL_TYPE_SLICE){
-        for(int i=0; i<10; i++){
-            printf("0x%02x ", buf[i]);
-        }
-        printf("\n");
         file_mux.writeFrame(buf, buf_index, false);
         buf_index = 0;
     }else if(type == NAUL_TYPE_IDR){
-        for(int i=0; i<10; i++){
-            printf("0x%02x ", buf[i]);
-        }
-        printf("\n");
         file_mux.writeFrame(buf, buf_index, true);
         buf_index = 0;
     }
