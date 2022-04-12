@@ -4,8 +4,9 @@
 
 using namespace std;
 
-Mp4Repair repair;
 int main(int argc, char** argv){
+    Mp4Repair repair;
+
     if(argc < 2){
         cout << "Please input file name." << endl; 
         exit(0);
