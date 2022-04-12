@@ -6,6 +6,7 @@
 
 #define __STDC_CONSTANT_MACROS
 #define EXTRA_DATA_MAX_LEN  128
+#define STREAM_FRAME_RATE 30
 
 extern "C"{
     #include <libavutil/avassert.h>
