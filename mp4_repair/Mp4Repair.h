@@ -25,11 +25,11 @@ typedef enum{
 
 class Mp4Repair{
 private:
-    std::ifstream* in_fs; 
+    // std::ifstream* in_fs; 
     uint8_t* buf;
-    uint32_t buf_index;
     FileMux* file_mux;
 
+    uint32_t buf_index;
     int in_file_len;
     int mdat_index;
     int mdat_len;
@@ -38,16 +38,17 @@ public:
     Mp4Repair();
     ~Mp4Repair();
 
-    bool open(char* file);
+    std::ifstream* open(char* file);
     FILE_STATUS check(char* file);
-    void close();
+    void close(std::ifstream* fs);
     FILE_STATUS repair(char* file);
 
 private:
-    bool boxParse(FILE_STATUS* status);
+    bool boxParse(std::ifstream* fs, FILE_STATUS* status);
     bool boxNeedIterate(const char* box_name);
     bool stringCompare(const char* str1, const char* str2, int len);
     void write( uint8_t* data, uint32_t len, NAUL_TYPE type);
+    uint32_t getFileLen(std::ifstream* fs, uint32_t seek);
 };
 
 #endif
