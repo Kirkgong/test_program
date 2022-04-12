@@ -17,15 +17,5 @@ int main(int argc, char** argv){
         exit(0);
     }
 
-    FILE_STATUS status = repair.check(argv[1]); 
-
-    if(status == FILE_STATUR_NORMAL){
-        cout << "File status is normal.Don't need repair." << endl;
-        exit(0);
-    }else if(status == FILE_STATUR_DAMAGE){
-        cout << "File status is undefine.Can't repair." << endl;
-        exit(0);
-    }else if(status == FILE_STATUR_ABNORMAL){
-        repair.repair(argv[1]);
-    }
+    FILE_STATUS status = repair.process(argv[1]); 
 }

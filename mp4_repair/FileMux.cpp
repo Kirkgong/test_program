@@ -10,6 +10,7 @@
 
 
  FileMux::FileMux(){
+    extra_data_len = 0;
     extra_data_buf = (uint8_t*)malloc(EXTRA_DATA_MAX_LEN);
  }
 
