@@ -2,7 +2,7 @@
 
 TARGET_IP="172.20.0.11"
 TARGET_PASSWORD="nex2genEVMaker!#22"
-GDB_DIR="/home/nio/project/skywalker-workspace/starcruiser/starcruiser-qnx/apps/qnx_ap/temp/"
+GDB_DIR="/home/kirk/project/skywalker-workspace/starcruiser/starcruiser-qnx/apps/qnx_ap/temp/"
 #TARGET_PASSWORD="root"
 
 lib_name=(libOSAbstraction.so \
@@ -40,7 +40,19 @@ lib_name=(libOSAbstraction.so \
           libeglSubDriverQnx.so \
           libaudio_record.so \
           libcsdIpcClient.so \
-          libioctlClient.so)
+          libioctlClient.so \
+          libdll_utils.so \
+          libsmmu_client.so \
+          libnpa_client.so \
+          libais_shdr.so \
+          libOpenCL.so \
+          libais.so \
+          libais_log.so \
+          libdalconfig-sa8155_adp_nio_kylo.so \
+          libais_config.so \
+          libais_nio_max96712_kylo_svc.so \
+          libais_nio_max96712_kylo_interior.so \
+	  libais_nio_max9296_kylo_dvr.so)
 
 move_program() {
     /usr/bin/expect <<EOF
@@ -134,7 +146,7 @@ EOF
 
 move_video() {
 
-    rm -rf /home/nio/Downloads/video/*
+    rm -rf /home/kirk/Downloads/video/*
 
     /usr/bin/expect <<EOF
 	set timeout 3600
@@ -153,7 +165,7 @@ move_video() {
 	}
 	expect eof"
 
-	spawn scp -r root@$TARGET_IP:/multimedia/video/* /home/nio/Downloads/video/
+	spawn scp -r root@$TARGET_IP:/multimedia/video/* /home/kirk/Downloads/video/
 	expect {
 		"root@$TARGET_IP's password: " 
 			{
@@ -191,7 +203,7 @@ move_log() {
 
 
 
-	spawn scp -r root@$TARGET_IP:/blackbox/cdclogs/qnx/slog/* /home/nio/Downloads/log/
+	spawn scp -r root@$TARGET_IP:/blackbox/cdclogs/qnx/slog/* /home/kirk/Downloads/log/
 	expect {
 		"root@$TARGET_IP's password: " 
 			{
@@ -230,7 +242,7 @@ EOF
 
     gunzip dvr_service.core.gz
     mv dvr_service.core $GDB_DIR
-    cp /home/nio/project/luke-dvr/build-qnx/install/bin/luke-dvr/dvr_service $GDB_DIR
+    cp /home/kirk/project/luke-dvr/build-qnx/install/bin/luke-dvr/dvr_service $GDB_DIR
 }
 
 ssh() {
