@@ -15,5 +15,7 @@ while true; do
     sleep 5
     ./mqpub -q 21
 	echo "exit defendant"
+    ./mqpub -q 23
+    sleep 5
 done
  
