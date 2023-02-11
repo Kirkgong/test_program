@@ -1,8 +1,12 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.0...3.20 FATAL_ERROR)
 project(learn_opengl)
 
 include_directories(./glad/include)
 include_directories(./glfw-3.3.8/include)
+
+
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_STANDARD 11)
 
 set(APP_SRC main.cpp ./glad/src/glad.c)
 
@@ -12,8 +16,6 @@ add_executable(${PROJECT_NAME} ${APP_SRC})
 
 target_link_libraries(${PROJECT_NAME} -lglfw3) 
 target_link_libraries(${PROJECT_NAME} -ldl) 
-target_link_libraries(${PROJECT_NAME} -lGL) 
-target_link_libraries(${PROJECT_NAME} -lGLU) 
 target_link_libraries(${PROJECT_NAME} -lX11) 
 target_link_libraries(${PROJECT_NAME} -lpthread) 
 
