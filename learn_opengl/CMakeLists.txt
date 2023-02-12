@@ -4,6 +4,7 @@ project(learn_opengl)
 include_directories(./glad/include)
 include_directories(./glfw-3.3.8/include)
 include_directories(./stb-image)
+include_directories(./glm)
 
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 11)
